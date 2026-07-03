@@ -1,0 +1,43 @@
+spring.application.name=backend-invoice-app
+server.port=8181
+
+# ---------------- DATABASE ----------------
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:mysql://localhost:3306/invoice?createDatabaseIfNotExist=true
+spring.datasource.username=root
+spring.datasource.password=saivarun
+spring.jpa.hibernate.ddl-auto=update
+
+# --- Razorpay ---
+# Get these from the Razorpay dashboard: Settings > API Keys
+razorpay.key.id=rzp_test_XXXXXXXXXXXX
+razorpay.key.secret=your_razorpay_key_secret
+
+# --- Email (Gmail example - use an app password, not your real password) ---
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=saitarun197@gmail.com
+spring.mail.password=bxjs lwhx gevu pxqb
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# --- Invoice PDF storage ---
+invoice.pdf.storage-path=/var/invoices/generated
+
+# --- Company branding (used to render the invoice PDF header/footer) ---
+company.name=URMISTEK
+company.address=9-1-44/2/1, 1st Floor, Opp Athidi Grand, AU North Campus, Visakhapatnam, AP 530013
+company.gstin=37AUWPB3649J1Z2
+company.hsn=
+company.logo-path=classpath:static/logo/logo1.png
+# Comma-separated tabs shown under the logo - leave blank to hide the row
+company.tagline-tabs=DEVELOPMENT,IT SERVICES,OUTSOURCING,CONSULTING
+
+# --- Company's own bank details, shown in the Remittance Details box ---
+company.bank.account-name=URMISTEK
+company.bank.name=HDFC Bank
+company.bank.account-number=
+company.bank.ifsc=HDFC0009100
+
+# --- Currency shown on the invoice line items/totals ---
+invoice.currency-label=INR

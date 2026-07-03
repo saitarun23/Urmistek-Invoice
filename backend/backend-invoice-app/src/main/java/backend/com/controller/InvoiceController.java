@@ -17,6 +17,7 @@ import backend.com.service.InvoiceService;
 
 @RestController
 @RequestMapping("/api/invoices")
+@CrossOrigin
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
