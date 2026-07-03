@@ -1,0 +1,67 @@
+package backend.com.service;
+
+import java.math.BigDecimal;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.Utils;
+
+@Service
+public class RazorpayService {
+
+    @Value("${razorpay.key.id}")
+    private String keyId;
+
+    @Value("${razorpay.key.secret}")
+    private String keySecret;
+
+    public String getKeyId() {
+        return keyId;
+    }
+
+    /**
+     * Creates a Razorpay order for the given amount (in rupees).
+     * Razorpay expects the amount in paise (smallest currency unit).
+     */
+    public Order createOrder(BigDecimal amountInRupees, String receiptId) {
+        try {
+            RazorpayClient client = new RazorpayClient(keyId, keySecret);
+
+            int amountInPaise = amountInRupees
+                    .multiply(BigDecimal.valueOf(100))
+                    .intValue();
+
+            JSONObject options = new JSONObject();
+            options.put("amount", amountInPaise);
+            options.put("currency", "INR");
+            options.put("receipt", receiptId);
+            options.put("payment_capture", 1);
+
+            return client.orders.create(options);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create Razorpay order: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Verifies that a payment callback genuinely came from Razorpay by
+     * recomputing the HMAC-SHA256 signature and comparing it.
+     * NEVER mark an invoice as PAID without this check passing.
+     */
+    public boolean verifySignature(String orderId, String paymentId, String signature) {
+        try {
+            JSONObject options = new JSONObject();
+            options.put("razorpay_order_id", orderId);
+            options.put("razorpay_payment_id", paymentId);
+            options.put("razorpay_signature", signature);
+            return Utils.verifyPaymentSignature(options, keySecret);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+
