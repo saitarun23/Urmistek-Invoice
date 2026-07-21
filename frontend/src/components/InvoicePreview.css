@@ -1,0 +1,358 @@
+.invoice-doc {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--color-ink);
+}
+
+.doc-black-bar {
+  height: 10px;
+  background: var(--color-ink);
+}
+
+.doc-header {
+  text-align: center;
+  padding: 18px 20px 14px;
+}
+
+.doc-tagline {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin-bottom: 10px;
+}
+
+.doc-company-name {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+
+.doc-company-address {
+  font-size: 12px;
+  color: var(--color-ink-soft);
+  margin: 0;
+}
+
+.doc-meta-row {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-meta-badge {
+  flex: 0 0 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  border-right: 1px solid var(--color-border);
+  padding: 14px;
+}
+
+.doc-meta-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-meta-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+}
+
+.doc-meta-field:first-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  min-width: 70px;
+}
+
+.doc-fixed-value {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.doc-pending {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.doc-billto {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-billto > .doc-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.doc-billto-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-billto-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.doc-billto-view {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.doc-billto-view strong {
+  font-size: 14px;
+}
+
+.doc-billto-contact {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+/* The "yellow field" look mirrors the highlighted cells on the original
+   Word doc - it's the visual cue for "you fill this in". */
+.yellow-field {
+  background: #fff6cc;
+  border: 1px solid #e6d27a;
+  border-radius: 4px;
+  padding: 7px 9px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-ink);
+  width: 100%;
+}
+
+.yellow-field:focus {
+  outline: none;
+  border-color: #c9a832;
+  background: #fff9dd;
+}
+
+.yellow-field-note {
+  font-size: 12px;
+  font-style: italic;
+}
+
+.doc-item-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.doc-item-table th {
+  background: var(--color-header-grey);
+  color: #fff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.doc-item-table td {
+  padding: 6px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.doc-billing-note-row td {
+  background: var(--color-light-grey);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.doc-center {
+  text-align: center;
+}
+
+.doc-right {
+  text-align: right;
+}
+
+.doc-item-table input {
+  font-size: 13px;
+  padding: 5px 7px;
+}
+
+.doc-qty-input {
+  text-align: right;
+}
+
+.doc-remove-cell {
+  width: 28px;
+  text-align: center;
+}
+
+.doc-add-item {
+  margin: 10px 20px;
+}
+
+.doc-totals-block {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+}
+
+.doc-totals-left {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.doc-totals-left p {
+  margin: 4px 0;
+}
+
+.doc-totals-right {
+  flex: 0 0 40%;
+  border-left: 1px solid var(--color-border);
+}
+
+.doc-totals-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  font-size: 13px;
+  background: var(--color-light-grey);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-totals-final {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.doc-gst-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gst-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.gst-stepper button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: var(--color-bg);
+}
+
+.gst-stepper button:hover {
+  background: var(--color-header-grey);
+}
+
+.gst-stepper input {
+  width: 40px;
+  border: none;
+  text-align: center;
+  font-size: 12px;
+}
+
+.gst-stepper input:focus {
+  outline: none;
+}
+
+.doc-amount-words {
+  padding: 12px 20px;
+  margin: 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-amount-words em {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.doc-remittance {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-remittance-title {
+  font-weight: 700;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.doc-remittance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 4px;
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+
+.doc-signatory {
+  text-align: right;
+  padding: 14px 20px;
+}
+
+.doc-signatory p {
+  margin: 2px 0;
+  font-size: 12px;
+}
+
+.doc-thankyou {
+  margin-top: 8px !important;
+  font-weight: 600;
+}
+.doc-signature-img { 
+  display: block; 
+  margin-left: auto; 
+  max-height: 50px; 
+  margin-bottom: 4px; 
+}
+.doc-rejected-note {
+   color: var(--color-danger);
+    font-size: 12px;
+     margin: 0;
+}
+
+@media (max-width: 640px) {
+  .doc-billto-row {
+    grid-template-columns: 1fr;
+  }
+  .doc-totals-block {
+    flex-direction: column;
+  }
+  .doc-totals-right {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+}

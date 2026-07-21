@@ -8,15 +8,11 @@ import java.math.BigDecimal;
 
 @Data
 public class InvoiceItemDto {
-
     @NotBlank
     private String description;
-
     private String category;
-
     @Positive
     private Integer quantity;
-
     @Positive
     private BigDecimal rate;
 }

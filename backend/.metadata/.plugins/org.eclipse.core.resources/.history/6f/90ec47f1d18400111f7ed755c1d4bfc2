@@ -1,0 +1,5 @@
+package backend.com.entity;
+
+public enum UserRole {
+
+}

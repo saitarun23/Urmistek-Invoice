@@ -7,7 +7,7 @@ import java.math.BigDecimal;
  * Four Hundred Fifty Rupees". Matches the "Amount In Words" row on the
  * sample invoice. Supports values up to 99,99,999 (Indian numbering).
  */
-final class AmountToWordsUtil {
+public final class AmountToWordsUtil {
 
     private static final String[] ONES = {
             "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
@@ -21,7 +21,7 @@ final class AmountToWordsUtil {
     private AmountToWordsUtil() {
     }
 
-    static String convert(BigDecimal amount) {
+    public static String convert(BigDecimal amount) {
         long rupees = amount.longValue();
         if (rupees == 0) return "Zero";
 

@@ -1,0 +1,5 @@
+package backend.com.dto;
+
+public class RejectInvoiceDTO {
+
+}

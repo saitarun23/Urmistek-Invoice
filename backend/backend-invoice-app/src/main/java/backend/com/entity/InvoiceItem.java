@@ -1,4 +1,5 @@
 package backend.com.entity;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -22,5 +23,4 @@ public class InvoiceItem {
     private Integer quantity;
     private BigDecimal rate;
     private BigDecimal amount; // quantity * rate, computed server-side
-
 }

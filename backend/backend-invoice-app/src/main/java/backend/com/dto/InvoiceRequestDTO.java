@@ -10,7 +10,6 @@ import java.util.List;
 
 @Data
 public class InvoiceRequestDTO {
-
     @Valid
     @NotNull
     private CustomerDTO customer;
@@ -19,6 +18,7 @@ public class InvoiceRequestDTO {
     @NotEmpty
     private List<InvoiceItemDto> items;
 
+    // GST % - user can increase/decrease on the form (e.g. 0, 5, 12, 18, 28)
     @NotNull
     private BigDecimal taxPercent;
 

@@ -1,19 +1,26 @@
 package backend.com.controller;
 
-
+import backend.com.dto.InvoiceRequestDTO;
+import backend.com.dto.InvoiceResponseDTO;
+import backend.com.dto.InvoiceSummaryDTO;
+import backend.com.dto.RejectInvoiceDTO;
+import backend.com.entity.AppUser;
+import backend.com.entity.Invoice;
+import backend.com.entity.InvoiceStatus;
+import backend.com.repository.AppUserRepository;
+import backend.com.repository.InvoiceRepository;
+import backend.com.security.CompanyPrincipal;
+import backend.com.service.InvoiceService;
 import jakarta.validation.Valid;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import backend.com.dto.InvoiceRequestDTO;
-import backend.com.dto.InvoiceResponseDTO;
-import backend.com.entity.Invoice;
-import backend.com.entity.InvoiceStatus;
-import backend.com.repository.InvoiceRepository;
-import backend.com.service.InvoiceService;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/invoices")
@@ -22,37 +29,102 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
     private final InvoiceRepository invoiceRepository;
+    private final AppUserRepository appUserRepository;
 
-    public InvoiceController(InvoiceService invoiceService, InvoiceRepository invoiceRepository) {
+    public InvoiceController(InvoiceService invoiceService, InvoiceRepository invoiceRepository, AppUserRepository appUserRepository) {
         this.invoiceService = invoiceService;
         this.invoiceRepository = invoiceRepository;
+        this.appUserRepository = appUserRepository;
     }
 
-    // Step 1: user submits the form -> we create a PENDING invoice + Razorpay order
+    // Step 1 - any signed-in user submits the form. Saved as PENDING_APPROVAL, no PDF yet.
     @PostMapping
-    public ResponseEntity<InvoiceResponseDTO> createInvoice(@Valid @RequestBody InvoiceRequestDTO request) {
-        return ResponseEntity.ok(invoiceService.createPendingInvoice(request));
+    public ResponseEntity<InvoiceResponseDTO> createInvoice(@Valid @RequestBody InvoiceRequestDTO request,
+                                                              @AuthenticationPrincipal CompanyPrincipal principal) {
+        return ResponseEntity.ok(invoiceService.createInvoice(request, principal));
     }
 
-    // Step 3: user (or their email link) downloads the PDF once paid.
-    // Scoped by invoice id + email so only the person who placed the order can fetch it.
+    // "My invoices" - lets the person who submitted it see whether it's pending/approved/rejected
+    @GetMapping("/mine")
+    public ResponseEntity<List<InvoiceSummaryDTO>> mine(@AuthenticationPrincipal CompanyPrincipal principal) {
+        AppUser me = appUserRepository.findByCompany_IdAndUsername(principal.companyId(), principal.username())
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        return ResponseEntity.ok(invoiceService.listMine(principal.companyId(), me.getId()));
+    }
+    
+    @GetMapping("/company")
+    public ResponseEntity<?> companyInvoices(@RequestParam(required = false) String status,
+                                              @AuthenticationPrincipal CompanyPrincipal principal) {
+        if (!isAdmin(principal)) return forbidden();
+        InvoiceStatus filter = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                filter = InvoiceStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(400).body(Map.of("message", "Invalid status: " + status));
+            }
+        }
+        return ResponseEntity.ok(invoiceService.listForCompany(principal.companyId(), filter));
+    }
+    
+    // Admin-only queue of everything waiting on a decision
+    @GetMapping("/pending")
+    public ResponseEntity<?> pending(@AuthenticationPrincipal CompanyPrincipal principal) {
+        if (!isAdmin(principal)) return forbidden();
+        return ResponseEntity.ok(invoiceService.listPending(principal.companyId()));
+    }
+
+    // Step 2a - admin accepts it: invoice number is assigned and the PDF is generated here
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<?> approve(@PathVariable Long id, @AuthenticationPrincipal CompanyPrincipal principal) {
+        if (!isAdmin(principal)) return forbidden();
+        try {
+            return ResponseEntity.ok(invoiceService.approve(id, principal));
+        } catch (IllegalStateException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // Step 2b - admin sends it back with an optional reason
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody(required = false) RejectInvoiceDTO body,
+                                     @AuthenticationPrincipal CompanyPrincipal principal) {
+        if (!isAdmin(principal)) return forbidden();
+        try {
+            String reason = body != null ? body.getReason() : null;
+            return ResponseEntity.ok(invoiceService.reject(id, principal, reason));
+        } catch (IllegalStateException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // Download the generated PDF - only exists once the invoice is APPROVED
     @GetMapping("/{id}/download")
-    public ResponseEntity<?> downloadInvoice(@PathVariable Long id, @RequestParam String email) {
+    public ResponseEntity<?> downloadInvoice(@PathVariable Long id,
+                                              @AuthenticationPrincipal CompanyPrincipal principal) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invoice not found"));
 
-        if (!invoice.getCustomer().getEmail().equalsIgnoreCase(email)) {
+        if (!invoice.getCompany().getId().equals(principal.companyId())) {
             return ResponseEntity.status(403).body("Not authorized to view this invoice");
         }
-        if (invoice.getStatus() != InvoiceStatus.PAID || invoice.getPdfPath() == null) {
-            return ResponseEntity.status(409).body("Invoice is not paid yet");
+        if (invoice.getPdfPath() == null) {
+            return ResponseEntity.status(409).body("This invoice hasn't been approved yet");
         }
 
         FileSystemResource file = new FileSystemResource(invoice.getPdfPath());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=" + invoice.getInvoiceNumber() + ".pdf")
+                        "attachment; filename=" + invoice.getInvoiceNumber().replace("/", "-") + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(file);
+    }
+
+    private boolean isAdmin(CompanyPrincipal principal) {
+        return principal != null && "ADMIN".equals(principal.role());
+    }
+
+    private ResponseEntity<Map<String, String>> forbidden() {
+        return ResponseEntity.status(403).body(Map.of("message", "Admin access required"));
     }
 }

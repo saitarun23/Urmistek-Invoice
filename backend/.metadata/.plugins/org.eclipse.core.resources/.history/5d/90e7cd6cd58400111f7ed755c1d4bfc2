@@ -1,0 +1,5 @@
+package backend.com.config;
+
+public class DataSeeder {
+
+}

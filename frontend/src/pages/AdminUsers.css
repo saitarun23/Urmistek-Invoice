@@ -1,0 +1,89 @@
+.users-panel {
+  background: var(--color-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+.users-panel h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.users-panel-sub {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.users-panel-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--color-success);
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  border-color: var(--color-ink);
+}
+
+.add-user-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-user-form input,
+.add-user-form select {
+  padding: 9px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.add-user-submit {
+  padding: 9px 16px;
+  white-space: nowrap;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.users-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: var(--color-light-grey);
+  padding: 10px 14px;
+}
+
+.users-table td {
+  padding: 10px 14px;
+  font-size: 13px;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 700px) {
+  .add-user-form {
+    grid-template-columns: 1fr;
+  }
+}

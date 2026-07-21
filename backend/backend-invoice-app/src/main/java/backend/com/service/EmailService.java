@@ -1,13 +1,12 @@
 package backend.com.service;
 
+import backend.com.entity.Invoice;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
-import backend.com.entity.Invoice;
 
 import java.io.File;
 
@@ -24,26 +23,27 @@ public class EmailService {
     }
 
     public void sendInvoice(Invoice invoice) {
+        if (invoice.getCustomer().getEmail() == null || invoice.getCustomer().getEmail().isBlank()) {
+            return; // B2B buyer may only have given a phone/address - nothing to email
+        }
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
             helper.setFrom(fromAddress);
             helper.setTo(invoice.getCustomer().getEmail());
-            helper.setSubject("Your invoice " + invoice.getInvoiceNumber());
+            helper.setSubject(invoice.getCompany().getName() + " - Invoice " + invoice.getInvoiceNumber());
             helper.setText(
                     "Hi " + invoice.getCustomer().getName() + ",\n\n" +
-                    "Thanks for your payment. Your invoice " + invoice.getInvoiceNumber() +
-                    " for " + invoice.getTotal() + " is attached.\n\nThank you!"
+                    "Please find attached invoice " + invoice.getInvoiceNumber() +
+                    " from " + invoice.getCompany().getName() + " for " + invoice.getTotal() + ".\n\n" +
+                    "Thank you for your business!"
             );
             helper.addAttachment(invoice.getInvoiceNumber() + ".pdf", new File(invoice.getPdfPath()));
-
             mailSender.send(message);
         } catch (MessagingException e) {
-            // Don't fail the payment flow if email fails - log it and let the user
-            // still download the PDF from the success page / invoice endpoint.
+            // Don't fail invoice generation if email fails - log it and let the user
+            // still download the PDF from the success page.
             System.err.println("Failed to email invoice: " + e.getMessage());
         }
     }
 }
-

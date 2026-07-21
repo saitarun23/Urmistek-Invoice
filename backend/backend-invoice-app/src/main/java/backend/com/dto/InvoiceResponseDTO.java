@@ -2,16 +2,18 @@ package backend.com.dto;
 
 import java.math.BigDecimal;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-@Data
-@AllArgsConstructor
-public class InvoiceResponseDTO {
-    private Long invoiceId;
-    private String invoiceNumber;
-    private String razorpayOrderId;
-    private BigDecimal amount;      // in rupees, frontend converts to paise if needed
-    private String currency;
-    private String razorpayKeyId;   // public key, safe to expose to frontend
+// Returned right after a staff member submits the form - status is always
+// PENDING_APPROVAL here, invoiceNumber is null (assigned only on approval).
+public record InvoiceResponseDTO(
+        Long invoiceId,
+        String status,
+        String companyName,
+        String customerName,
+        BigDecimal subtotal,
+        BigDecimal taxPercent,
+        BigDecimal taxAmount,
+        BigDecimal total,
+        String amountInWords,
+        String currency
+) {
 }

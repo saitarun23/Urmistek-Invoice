@@ -1,12 +1,14 @@
 package backend.com.service;
 
+import backend.com.entity.Company;
 import backend.com.entity.Invoice;
 import backend.com.entity.InvoiceItem;
+import backend.com.entity.InvoiceStatus;
+
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -17,54 +19,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 
-
 /**
  * Renders the invoice PDF to match the URMISTEK sample invoice layout:
  * logo -> tagline tabs -> black bar -> company name -> address ->
  * invoice no/date -> bill-to -> item table -> subtotal/GSTIN/total ->
  * amount in words -> remittance details -> signatory -> black bar.
  *
- * Company details are read from application.properties so this same
- * class can be reused for any client, not just URMISTEK.
+ * Branding now comes entirely from the invoice's Company entity, so the
+ * exact same code renders a correct PDF for URMISTEK or UB Industries
+ * (or any tenant added later) - nothing here is hardcoded per-company.
  */
 @Service
 public class PdfGeneratorService {
-
-    @Value("${invoice.pdf.storage-path}")
-    private String storagePath;
-
-    @Value("${company.name}")
-    private String companyName;
-
-    @Value("${company.address}")
-    private String companyAddress;
-
-    @Value("${company.gstin}")
-    private String companyGstin;
-
-    @Value("${company.hsn}")
-    private String companyHsn;
-
-    @Value("${company.logo-path}")
-    private String logoPath;
-
-    @Value("${company.tagline-tabs}")
-    private String taglineTabs;
-
-    @Value("${company.bank.account-name}")
-    private String bankAccountName;
-
-    @Value("${company.bank.name}")
-    private String bankName;
-
-    @Value("${company.bank.account-number}")
-    private String bankAccountNumber;
-
-    @Value("${company.bank.ifsc}")
-    private String bankIfsc;
-
-    @Value("${invoice.currency-label}")
-    private String currencyLabel;
 
     private final ResourceLoader resourceLoader;
 
@@ -85,9 +51,11 @@ public class PdfGeneratorService {
     }
 
     public String generate(Invoice invoice) {
+        Company company = invoice.getCompany();
         try {
+            String storagePath = company.getPdfStoragePath();
             Files.createDirectories(Path.of(storagePath));
-            String fileName = invoice.getInvoiceNumber() + ".pdf";
+            String fileName = invoice.getInvoiceNumber().replace("/", "-") + ".pdf";
             String fullPath = Path.of(storagePath, fileName).toString();
 
             Document document = new Document(PageSize.A4, 30, 30, 20, 30);
@@ -100,21 +68,21 @@ public class PdfGeneratorService {
             PdfPTable table = new PdfPTable(widths);
             table.setWidthPercentage(100);
 
-            addLogoRow(table);
-            addTaglineTabsRow(table);
+            addLogoRow(table, company);
+            addTaglineTabsRow(table, company);
             addBlackBar(table, 6);
-            addCompanyNameRow(table);
-            addAddressRow(table);
+            addCompanyNameRow(table, company);
+            addAddressRow(table, company);
             addInvoiceMetaRows(table, invoice);
             addBillToRow(table, invoice);
-            addItemTableHeader(table);
+            addItemTableHeader(table, company);
             addBillingNoteRow(table, invoice);
             addItemRows(table, invoice);
             addSubtotalRow(table, invoice);
-            addGstinAndTotalRows(table, invoice);
-            addAmountInWordsRow(table, invoice);
-            addRemittanceSection(table);
-            addSignatoryRow(table);
+            addGstinAndTotalRows(table, invoice, company);
+            addAmountInWordsRow(table, invoice, company);
+            addRemittanceSection(table, company);
+            addSignatoryRow(table, company, invoice);
             addBlackBar(table, 6);
 
             document.add(table);
@@ -125,7 +93,7 @@ public class PdfGeneratorService {
         }
     }
 
-    private void addLogoRow(PdfPTable table) {
+    private void addLogoRow(PdfPTable table, Company company) {
         PdfPCell cell = new PdfPCell();
         cell.setColspan(6);
         cell.setBorder(Rectangle.NO_BORDER);
@@ -133,7 +101,7 @@ public class PdfGeneratorService {
         cell.setPaddingBottom(4);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         try {
-            Resource resource = resourceLoader.getResource(logoPath);
+            Resource resource = resourceLoader.getResource(company.getLogoPath());
             if (resource.exists()) {
                 Image logo = Image.getInstance(resource.getURL());
                 logo.scaleToFit(70, 70);
@@ -143,13 +111,14 @@ public class PdfGeneratorService {
                 cell.addElement(new Paragraph(" "));
             }
         } catch (Exception e) {
-            // No logo configured yet - leave the row blank rather than fail PDF generation
+            // No logo configured yet for this tenant - leave the row blank rather than fail PDF generation
             cell.addElement(new Paragraph(" "));
         }
         table.addCell(cell);
     }
 
-    private void addTaglineTabsRow(PdfPTable table) {
+    private void addTaglineTabsRow(PdfPTable table, Company company) {
+        String taglineTabs = company.getTaglineTabs();
         if (taglineTabs == null || taglineTabs.isBlank()) return;
         String[] tabs = taglineTabs.split(",");
         String joined = String.join("        ", tabs); // wide spacing, matches the ribbon look
@@ -170,8 +139,8 @@ public class PdfGeneratorService {
         table.addCell(cell);
     }
 
-    private void addCompanyNameRow(PdfPTable table) {
-        PdfPCell cell = new PdfPCell(new Phrase(companyName, BRAND_TITLE));
+    private void addCompanyNameRow(PdfPTable table, Company company) {
+        PdfPCell cell = new PdfPCell(new Phrase(company.getName(), BRAND_TITLE));
         cell.setColspan(6);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         cell.setPaddingTop(14);
@@ -179,8 +148,8 @@ public class PdfGeneratorService {
         table.addCell(cell);
     }
 
-    private void addAddressRow(PdfPTable table) {
-        PdfPCell cell = new PdfPCell(new Phrase(companyAddress, ADDRESS));
+    private void addAddressRow(PdfPTable table, Company company) {
+        PdfPCell cell = new PdfPCell(new Phrase(emptyDash(company.getAddress()), ADDRESS));
         cell.setColspan(6);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         cell.setPadding(6);
@@ -208,7 +177,14 @@ public class PdfGeneratorService {
         StringBuilder sb = new StringBuilder("To,\n");
         sb.append(invoice.getCustomer().getName()).append("\n");
         if (invoice.getCustomer().getAddress() != null) sb.append(invoice.getCustomer().getAddress()).append("\n");
-        sb.append(invoice.getCustomer().getEmail()).append("  |  ").append(invoice.getCustomer().getPhone());
+        if (invoice.getCustomer().getGstin() != null && !invoice.getCustomer().getGstin().isBlank()) {
+            sb.append("GSTIN: ").append(invoice.getCustomer().getGstin()).append("\n");
+        }
+        String contact = String.join("  |  ",
+                java.util.stream.Stream.of(invoice.getCustomer().getEmail(), invoice.getCustomer().getPhone())
+                        .filter(s -> s != null && !s.isBlank())
+                        .toList());
+        sb.append(contact);
 
         PdfPCell cell = new PdfPCell(new Phrase(sb.toString(), NORMAL));
         cell.setColspan(6);
@@ -217,8 +193,9 @@ public class PdfGeneratorService {
         table.addCell(cell);
     }
 
-    private void addItemTableHeader(PdfPTable table) {
-        String[] headers = {"SI.No", "DESCRIPTION", "Category", "No Of\nResources", "Amount\n(" + currencyLabel + ")", "TOTAL (" + currencyLabel + ")"};
+    private void addItemTableHeader(PdfPTable table, Company company) {
+        String currency = company.getCurrencyLabel();
+        String[] headers = {"SI.No", "DESCRIPTION", "Category", "No Of\nResources", "Amount\n(" + currency + ")", "TOTAL (" + currency + ")"};
         for (String h : headers) {
             PdfPCell cell = new PdfPCell(new Phrase(h, TABLE_HEADER));
             cell.setBackgroundColor(HEADER_GREY);
@@ -230,7 +207,7 @@ public class PdfGeneratorService {
     }
 
     private void addBillingNoteRow(PdfPTable table, Invoice invoice) {
-        String note = invoice.getBillingNote() != null
+        String note = invoice.getBillingNote() != null && !invoice.getBillingNote().isBlank()
                 ? invoice.getBillingNote()
                 : "Order placed on " + invoice.getInvoiceDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
         PdfPCell cell = new PdfPCell(new Phrase(note, BOLD_SMALL));
@@ -267,8 +244,8 @@ public class PdfGeneratorService {
         table.addCell(value);
     }
 
-    private void addGstinAndTotalRows(PdfPTable table, Invoice invoice) {
-        PdfPCell gstin = new PdfPCell(new Phrase("GSTIN No:- " + emptyDash(companyGstin), NORMAL));
+    private void addGstinAndTotalRows(PdfPTable table, Invoice invoice, Company company) {
+        PdfPCell gstin = new PdfPCell(new Phrase("GSTIN No:- " + emptyDash(company.getGstin()), NORMAL));
         gstin.setColspan(4);
         gstin.setPadding(6);
         table.addCell(gstin);
@@ -279,7 +256,7 @@ public class PdfGeneratorService {
         taxValue.setHorizontalAlignment(Element.ALIGN_RIGHT);
         table.addCell(taxValue);
 
-        PdfPCell hsn = new PdfPCell(new Phrase("HSN SAC:- " + emptyDash(companyHsn), NORMAL));
+        PdfPCell hsn = new PdfPCell(new Phrase("HSN SAC:- " + emptyDash(company.getHsn()), NORMAL));
         hsn.setColspan(4);
         hsn.setPadding(6);
         table.addCell(hsn);
@@ -293,26 +270,26 @@ public class PdfGeneratorService {
         table.addCell(totalValue);
     }
 
-    private void addAmountInWordsRow(PdfPTable table, Invoice invoice) {
+    private void addAmountInWordsRow(PdfPTable table, Invoice invoice, Company company) {
         PdfPCell cell = new PdfPCell(new Phrase(
-                "Amount In Words: " + AmountToWordsUtil.convert(invoice.getTotal()) + " " + currencyLabel + " only",
+                "Amount In Words: " + invoice.getAmountInWords() + " " + company.getCurrencyLabel() + " only",
                 NORMAL));
         cell.setColspan(6);
         cell.setPadding(8);
         table.addCell(cell);
     }
 
-    private void addRemittanceSection(PdfPTable table) {
+    private void addRemittanceSection(PdfPTable table, Company company) {
         PdfPCell title = new PdfPCell(new Phrase("Remittance Details (for reference)", LABEL));
         title.setColspan(6);
         title.setPadding(6);
         table.addCell(title);
 
         String[][] rows = {
-                {"Beneficiary Account Name", bankAccountName},
-                {"Beneficiary Bank", bankName},
-                {"Beneficiary Account Number", emptyDash(bankAccountNumber)},
-                {"IFSC Code", bankIfsc}
+                {"Beneficiary Account Name", emptyDash(company.getBankAccountName())},
+                {"Beneficiary Bank", emptyDash(company.getBankName())},
+                {"Beneficiary Account Number", emptyDash(company.getBankAccountNumber())},
+                {"IFSC Code", emptyDash(company.getBankIfsc())}
         };
         for (String[] row : rows) {
             PdfPCell label = new PdfPCell(new Phrase(row[0], NORMAL));
@@ -327,13 +304,36 @@ public class PdfGeneratorService {
         }
     }
 
-    private void addSignatoryRow(PdfPTable table) {
-        PdfPCell cell = new PdfPCell(new Phrase(
-                "\nfor " + companyName + "\nAuthorized Signatory\n\nWe Thank You For Your Business!", NORMAL));
+    private void addSignatoryRow(PdfPTable table, Company company, Invoice invoice) {
+        PdfPCell cell = new PdfPCell();
         cell.setColspan(6);
         cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         cell.setPadding(10);
         cell.setBorder(Rectangle.NO_BORDER);
+
+        // Only an APPROVED invoice has a reviewer, and only that reviewer's
+        // signature is ever drawn - a rejected/pending invoice never shows one.
+        String signaturePath = (invoice.getStatus() == InvoiceStatus.APPROVED && invoice.getReviewedBy() != null)
+                ? invoice.getReviewedBy().getSignatureImagePath()
+                : null;
+
+        if (signaturePath != null) {
+            try {
+                Image sig = Image.getInstance(signaturePath);
+                sig.scaleToFit(120, 50);
+                sig.setAlignment(Element.ALIGN_RIGHT);
+                cell.addElement(sig);
+            } catch (Exception e) {
+                // Signature file missing/corrupt - fall back to text only, don't fail the PDF
+            }
+        }
+
+        String reviewerLine = (invoice.getStatus() == InvoiceStatus.APPROVED && invoice.getReviewedBy() != null)
+                ? invoice.getReviewedBy().getDisplayName()
+                : "Authorized Signatory";
+
+        cell.addElement(new Phrase(
+                "\nfor " + company.getName() + "\n" + reviewerLine + "\n\nWe Thank You For Your Business!", NORMAL));
         table.addCell(cell);
     }
 

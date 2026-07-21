@@ -1,0 +1,107 @@
+package backend.com.config;
+
+import backend.com.entity.AppUser;
+import backend.com.entity.Company;
+import backend.com.entity.UserRole;
+import backend.com.repository.AppUserRepository;
+import backend.com.repository.CompanyRepository;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+/**
+ * Seeds the two tenants on first run so the login screen has something to
+ * show immediately. UB Industries' real address/GSTIN/bank details are NOT
+ * known to this codebase - the placeholders below are marked clearly and
+ * MUST be replaced with the real values (either edit here and restart with
+ * an empty DB, or update the "companies" table row directly).
+ *
+ * Default logins (CHANGE THESE PASSWORDS before going live):
+ *   URMISTEK      -> admin/urmistek@123  (approves)   staff/urmistekstaff@123 (submits)
+ *   UB Industries -> admin/ubindustries@123 (approves) staff/ubstaff@123 (submits)
+ */
+@Component
+public class DataSeeder implements CommandLineRunner {
+
+    private final CompanyRepository companyRepository;
+    private final AppUserRepository appUserRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public DataSeeder(CompanyRepository companyRepository, AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
+        this.companyRepository = companyRepository;
+        this.appUserRepository = appUserRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public void run(String... args) {
+        if (companyRepository.count() > 0) return;
+
+        Company urmistek = new Company();
+        urmistek.setCode("URMISTEK");
+        urmistek.setName("URMISTEK");
+        urmistek.setAddress("9-1-44/2/1, 1st Floor, Opp Athidi Grand, AU North Campus, Visakhapatnam, AP 530013");
+        urmistek.setGstin("37AUWPB3649J1Z2");
+        urmistek.setHsn("");
+        urmistek.setLogoPath("classpath:static/logo/urmistek-logo.png");
+        urmistek.setTaglineTabs("DEVELOPMENT,IT SERVICES,OUTSOURCING,CONSULTING");
+        urmistek.setBankAccountName("URMISTEK");
+        urmistek.setBankName("HDFC Bank");
+        urmistek.setBankAccountNumber("");
+        urmistek.setBankIfsc("HDFC0009100");
+        urmistek.setCurrencyLabel("INR");
+        urmistek.setPdfStoragePath("/var/invoices/generated/urmistek");
+        companyRepository.save(urmistek);
+
+        // --- PLACEHOLDER: replace every field below with UB Industries' real details ---
+        Company ubIndustries = new Company();
+        ubIndustries.setCode("UB_INDUSTRIES");
+        ubIndustries.setName("UB Industries");
+        ubIndustries.setAddress("<< UB Industries registered address >>");
+        ubIndustries.setGstin("<< UB Industries GSTIN >>");
+        ubIndustries.setHsn("");
+        ubIndustries.setLogoPath("classpath:static/logo/ub-industries-logo.png");
+        ubIndustries.setTaglineTabs("");
+        ubIndustries.setBankAccountName("UB Industries");
+        ubIndustries.setBankName("<< bank name >>");
+        ubIndustries.setBankAccountNumber("<< account number >>");
+        ubIndustries.setBankIfsc("<< IFSC >>");
+        ubIndustries.setCurrencyLabel("INR");
+        ubIndustries.setPdfStoragePath("/var/invoices/generated/ub-industries");
+        companyRepository.save(ubIndustries);
+
+        AppUser urmistekAdmin = new AppUser();
+        urmistekAdmin.setCompany(urmistek);
+        urmistekAdmin.setUsername("admin");
+        urmistekAdmin.setDisplayName("Urmila BhupathiRaju");
+        urmistekAdmin.setPasswordHash(passwordEncoder.encode("urmistek@123"));
+        urmistekAdmin.setRole(UserRole.ADMIN);
+        appUserRepository.save(urmistekAdmin);
+
+        AppUser urmistekStaff = new AppUser();
+        urmistekStaff.setCompany(urmistek);
+        urmistekStaff.setUsername("staff");
+        urmistekStaff.setDisplayName("URMISTEK Staff");
+        urmistekStaff.setPasswordHash(passwordEncoder.encode("urmistekstaff@123"));
+        urmistekStaff.setRole(UserRole.STAFF);
+        appUserRepository.save(urmistekStaff);
+
+        AppUser ubAdmin = new AppUser();
+        ubAdmin.setCompany(ubIndustries);
+        ubAdmin.setUsername("admin");
+        ubAdmin.setDisplayName("UB Industries Admin");
+        ubAdmin.setPasswordHash(passwordEncoder.encode("ubindustries@123"));
+        ubAdmin.setRole(UserRole.ADMIN);
+        appUserRepository.save(ubAdmin);
+
+        AppUser ubStaff = new AppUser();
+        ubStaff.setCompany(ubIndustries);
+        ubStaff.setUsername("staff");
+        ubStaff.setDisplayName("UB Industries Staff");
+        ubStaff.setPasswordHash(passwordEncoder.encode("ubstaff@123"));
+        ubStaff.setRole(UserRole.STAFF);
+        appUserRepository.save(ubStaff);
+
+        System.out.println("Seeded companies + default admin/staff logins - change the passwords before production use.");
+    }
+}

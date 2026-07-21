@@ -1,4 +1,5 @@
 package backend.com.entity;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -14,15 +15,12 @@ public class Customer {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
     private String phone;
 
     @Column(length = 500)
     private String address;
 
     private String gstin;
-
 }

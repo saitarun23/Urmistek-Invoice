@@ -1,0 +1,31 @@
+package backend.com.dto;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+// Used both for the admin's "pending approvals" list and a staff member's "my invoices" list
+public record InvoiceSummaryDTO(
+        Long invoiceId,
+        String invoiceNumber,          // null until approved
+        String status,                 // PENDING_APPROVAL | APPROVED | REJECTED
+        String customerName,
+        String customerAddress,
+        String customerGstin,
+        String customerEmail,
+        String customerPhone,
+        String billingNote,
+        List<InvoiceItemViewDTO> items,
+        BigDecimal subtotal,
+        BigDecimal taxPercent,
+        BigDecimal taxAmount,
+        BigDecimal total,
+        String amountInWords,
+        String currency,
+        String createdByUsername,
+        LocalDateTime createdAt,
+        String rejectionReason,
+        String reviewedByDisplayName,
+        Long reviewedBySignatureUserId
+) {
+}

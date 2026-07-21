@@ -1,0 +1,5 @@
+package backend.com.security;
+
+public class SecurityConfig {
+
+}
